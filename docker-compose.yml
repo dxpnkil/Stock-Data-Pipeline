@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   zookeeper-1:
     image: confluentinc/cp-zookeeper:latest
@@ -12,10 +13,8 @@ services:
     ports:
       - 12181:2181
     volumes:
-      - ../storage/data/zookeeper-1/data:/var/lib/zookeeper/data
-      - ../storage/data/zookeeper-1/log:/var/lib/zookeeper/log
-    networks:
-      - hadoop-net
+      - ./storage/zookeeper-1/data:/var/lib/zookeeper/data
+      - ./storage/zookeeper-1/log:/var/lib/zookeeper/log
 
   zookeeper-2:
     image: confluentinc/cp-zookeeper:latest
@@ -29,102 +28,24 @@ services:
     ports:
       - 22181:2181
     volumes:
-      - ../storage/data/zookeeper-2/data:/var/lib/zookeeper/data
-      - ../storage/data/zookeeper-2/log:/var/lib/zookeeper/log
-    networks:
-      - hadoop-net
+      - ./storage/zookeeper-2/data:/var/lib/zookeeper/data
+      - ./storage/zookeeper-2/log:/var/lib/zookeeper/log
 
   zookeeper-3:
     image: confluentinc/cp-zookeeper:latest
     hostname: zookeeper-3
     container_name: zookeeper-3
     environment:
-      - ZOOKEEPER_SERVER_ID=2
+      - ZOOKEEPER_SERVER_ID=3
       - ZOOKEEPER_CLIENT_PORT=2181
       - ZOOKEEPER_TICK_TIME=2000
       - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
     ports:
       - 32181:2181
     volumes:
-      - ../storage/data/zookeeper-2/data:/var/lib/zookeeper/data
-      - ../storage/data/zookeeper-2/log:/var/lib/zookeeper/log
-    networks:
-      - hadoop-net
+      - ./storage/zookeeper-3/data:/var/lib/zookeeper/data
+      - ./storage/zookeeper-3/log:/var/lib/zookeeper/log
 
-  kafka-1:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka-1
-    hostname: kafka-1
-    restart: on-failure
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 19092:19092
-    environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:19092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
-      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
-      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
-    volumes:
-      - ../storage/data/kafka-1:/var/lib/kafka/data
-    networks:
-      - hadoop-net
-
-  kafka-2:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka-2
-    hostname: kafka-2
-    restart: on-failure
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 29092:29092
-    environment:
-      - KAFKA_BROKER_ID=2
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:29092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
-      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
-      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
-    volumes:
-      - ../storage/data/kafka-2:/var/lib/kafka/data
-    networks:
-      - hadoop-net
-      
-  kafka-3:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka-3
-    hostname: kafka-3
-    restart: on-failure
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 39092:39092
-    environment:
-      - KAFKA_BROKER_ID=2
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:39092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
-      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
-      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
-    volumes:
-      - ../storage/data/kafka-2:/var/lib/kafka/data
-    networks:
-      - hadoop-net
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -141,9 +62,7 @@ services:
       restart_policy:
         condition: on-failure
     volumes:
-      - ../storage/hadoop/namenode:/hadoop/dfs/name
-    networks:
-      - hadoop-net
+      - ../storage/namenode:/hadoop/dfs/name
 
   datanode-1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
@@ -160,9 +79,8 @@ services:
       restart_policy:
         condition: on-failure
     volumes:
-      - ../storage/hadoop/datanode-1:/hadoop/dfs/data
-    networks:
-      - hadoop-net
+      - ../storage/datanode-1:/hadoop/dfs/data
+
   datanode-2:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode-2
@@ -178,9 +96,8 @@ services:
       restart_policy:
         condition: on-failure
     volumes:
-      - ../storage/hadoop/datanode-2:/hadoop/dfs/data
-    networks:
-      - hadoop-net
+      - ../storage/datanode-2:/hadoop/dfs/data
+
   datanode-3:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode-3
@@ -196,9 +113,65 @@ services:
       restart_policy:
         condition: on-failure
     volumes:
-      - ../storage/hadoop/datanode-3:/hadoop/dfs/data
-    networks:
-      - hadoop-net
+      - ../storage/datanode-3:/hadoop/dfs/data
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 19092:19092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 5
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+    volumes:
+      - ./storage/kafka-1:/var/lib/kafka/data
+
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 5
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+    volumes:
+      - ./storage/kafka-2:/var/lib/kafka/data
+
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 39092:39092
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 5
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+    volumes:
+      - ./storage/kafka-3:/var/lib/kafka/data
+
   spark-master:
     image: bde2020/spark-master:3.0.0-hadoop3.2
     container_name: spark-master
@@ -213,8 +186,7 @@ services:
     environment:
       - INIT_DAEMON_STEP=setup_spark
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    networks:
-      - hadoop-net
+
   spark-worker:
     image: bde2020/spark-worker:3.0.0-hadoop3.2
     container_name: spark-worker
@@ -225,61 +197,40 @@ services:
     environment:
       - "SPARK_MASTER=spark://spark-master:7077"
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    networks:
-      - hadoop-net
+
   hive-server:
     image: bde2020/hive:2.3.2-postgresql-metastore
     env_file:
-      - ./hadoop/hadoop.env
+      - ./hive/hadoop-hive.env
     environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore:9083/metastore"
       SERVICE_PRECONDITION: "hive-metastore:9083"
     ports:
       - "10000:10000"
-    networks:
-      - hadoop-net
+
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
     env_file:
-      - ./hadoop/hadoop.env
+      - ./hive/hadoop-hive.env
     command: /opt/hive/bin/hive --service metastore
     environment:
       - SERVICE_PRECONDITION=namenode:9870 hive-metastore-postgresql:5432
-      # SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore-postgresql:5432"
     ports:
       - "9083:9083"
-    networks:
-      - hadoop-net
+
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
-    networks:
-      - hadoop-net
+
   presto-coordinator:
     image: shawnzhu/prestodb:0.181
     ports:
       - "18080:8080"
-    networks:
-      - hadoop-net
-  superset_db:
-    image: postgres:14
-    container_name: superset_db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_PASSWORD=superset
-      - POSTGRES_USER=superset
-      - POSTGRES_DB=superset
-    volumes:
-      - sspgdata:/var/lib/postgresql/data
-    networks:
-      - hadoop-net
 
   superset:
     image: apache/superset
     container_name: superset
-    depends_on:
-      - superset_db
     ports:
-      - "28088:8088"
+      - "18088:8088"
     environment:
       - SUPERSET_ADMIN_USERNAME=admin
       - SUPERSET_ADMIN_PASSWORD=admin
@@ -287,11 +238,4 @@ services:
       - SUPERSET_CONFIG_PATH=/etc/superset/superset_config.py
     volumes:
       - ./superset:/etc/superset
-    networks:
-      - hadoop-net
-networks:
-  hadoop-net:
-    driver: bridge
-
-volumes:
-  sspgdata:
+  
