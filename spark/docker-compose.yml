@@ -1,0 +1,79 @@
+version: "3.3"
+services:
+  spark-master:
+    image: cluster-spark:3.3.3
+    container_name: spark-master
+    environment:
+      - SPARK_WORKLOAD=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION=no
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    ports:
+      - '8090:8080'
+      - '7077:7077'
+      - '4040:4040'
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs
+    networks:
+      - hadoop
+
+  spark-worker-0:
+    image: cluster-spark:3.3.3
+    container_name: spark-worker-0
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=3G
+      - SPARK_WORKLOAD=worker
+      - SPARK_WORKER_WEBUI_PORT=8081
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs
+    ports:
+      - "8081:8081"
+    networks:
+      - hadoop
+
+  spark-worker-1:
+    image: cluster-spark:3.3.3
+    container_name: spark-worker-1
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=3G
+      - SPARK_WORKLOAD=worker
+      - SPARK_WORKER_WEBUI_PORT=8082
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs
+    ports:
+      - "8082:8082"
+    networks:
+      - hadoop
+
+  spark-worker-2:
+    image: cluster-spark:3.3.3
+    container_name: spark-worker-2
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=3G
+      - SPARK_WORKLOAD=worker
+      - SPARK_WORKER_WEBUI_PORT=8083
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs
+    ports:
+      - "8083:8083"
+    networks:
+      - hadoop
+
+networks:
+  hadoop:
+    external: true

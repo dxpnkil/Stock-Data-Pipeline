@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    ports:
+      - 9870:9870
+    environment:
+      - CLUSTER_NAME=stock
+    env_file:
+      - ./hadoop-hive.env
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+    - hadoop
+
+  datanode-1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode-1
+    hostname: datanode-1
+    ports:
+      - 19864:9864
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop-hive.env
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+    networks:
+      - hadoop
+
+  datanode-2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode-2
+    hostname: datanode-2
+    ports:
+      - 29864:9864
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop-hive.env
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+    networks:
+      - hadoop
+
+  datanode-3:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode-3
+    hostname: datanode-3
+    ports:
+      - 39864:9864
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop-hive.env
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+    networks:
+      - hadoop
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+    networks:
+      - hadoop
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    env_file:
+      - ./hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 hive-metastore-postgresql:5432"
+    ports:
+      - "9083:9083"
+    networks:
+      - hadoop
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    networks:
+    - hadoop
+  presto-coordinator:
+    image: shawnzhu/prestodb:0.181
+    ports:
+      - "18080:8080"
+    networks:
+      - hadoop
+
+networks:
+  hadoop:
+    external: true
