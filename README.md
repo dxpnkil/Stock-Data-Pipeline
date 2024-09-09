@@ -4,7 +4,7 @@
 - 💡 [Introduction](#Introduction)
 - 🌟 [System Architecture](#System-architecture)
 - 📁 [Repository Structure](#repository-structure)
-- 🛠️ [Guide](#guide)
+- 🛠️ [Quickstart](#quickstart)
 
 ## 💡 Introduction:
 
@@ -18,4 +18,4 @@ In this repository, I deployed a simple data pipeline for processing, storing, a
 
 ## 📁 Repository Structure
 
-## 🛠️ Guide:
+## 🛠️ Quickstart:
