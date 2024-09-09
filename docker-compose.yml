@@ -1,195 +1,80 @@
-version: "3.8"
+version: "3"
 
 services:
-  zookeeper-1:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: zookeeper-1
-    container_name: zookeeper-1
-    environment:
-      - ZOOKEEPER_SERVER_ID=1
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-      - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    ports:
-      - 12181:2181
-    volumes:
-      - ./storage/zookeeper-1/data:/var/lib/zookeeper/data
-      - ./storage/zookeeper-1/log:/var/lib/zookeeper/log
-
-  zookeeper-2:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: zookeeper-2
-    container_name: zookeeper-2
-    environment:
-      - ZOOKEEPER_SERVER_ID=2
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-      - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    ports:
-      - 22181:2181
-    volumes:
-      - ./storage/zookeeper-2/data:/var/lib/zookeeper/data
-      - ./storage/zookeeper-2/log:/var/lib/zookeeper/log
-
-  zookeeper-3:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: zookeeper-3
-    container_name: zookeeper-3
-    environment:
-      - ZOOKEEPER_SERVER_ID=3
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-      - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    ports:
-      - 42181:2181
-    volumes:
-      - ./storage/zookeeper-3/data:/var/lib/zookeeper/data
-      - ./storage/zookeeper-3/log:/var/lib/zookeeper/log
-
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
-    hostname: namenode
+    restart: always
     ports:
       - 9870:9870
-    environment:
-      - CLUSTER_NAME=stock
-    env_file:
-      - ./hadoop/hadoop.env
-    deploy:
-      mode: replicated
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+      - 9010:9000
     volumes:
-      - ../storage/namenode:/hadoop/dfs/name
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    env_file:
+      - ./hadoop.env
 
-  datanode-1:
+  datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-    container_name: datanode-1
-    hostname: datanode-1
-    ports:
-      - 19864:9864
+    container_name: datanode
+    restart: always
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
     environment:
-      - SERVICE_PRECONDITION=namenode:9870
+      SERVICE_PRECONDITION: "namenode:9870"
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+    ports:
+      - "9864:9864"
     env_file:
-      - ./hadoop/hadoop.env
-    deploy:
-      mode: global
-      restart_policy:
-        condition: on-failure
-    volumes:
-      - ../storage/datanode-1:/hadoop/dfs/data
+      - ./hadoop.env
 
-  datanode-2:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-    container_name: datanode-2
-    hostname: datanode-2
-    ports:
-      - 29864:9864
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
     environment:
-      - SERVICE_PRECONDITION=namenode:9870
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
     env_file:
-      - ./hadoop/hadoop.env
-    deploy:
-      mode: global
-      restart_policy:
-        condition: on-failure
-    volumes:
-      - ../storage/datanode-2:/hadoop/dfs/data
+      - ./hadoop.env
 
-  datanode-3:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-    container_name: datanode-3
-    hostname: datanode-3
-    ports:
-      - 39864:9864
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    restart: always
     environment:
-      - SERVICE_PRECONDITION=namenode:9870
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
     env_file:
-      - ./hadoop/hadoop.env
-    deploy:
-      mode: global
-      restart_policy:
-        condition: on-failure
-    volumes:
-      - ../storage/datanode-3:/hadoop/dfs/data
+      - ./hadoop.env
 
-  kafka-1:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 19092:19092
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: always
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:19092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_NUM_PARTITIONS: 5
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
     volumes:
-      - ./storage/kafka-1:/var/lib/kafka/data
-
-  kafka-2:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 29092:29092
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_NUM_PARTITIONS: 5
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-    volumes:
-      - ./storage/kafka-2:/var/lib/kafka/data
-
-  kafka-3:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-      - zookeeper-3
-    ports:
-      - 39092:39092
-    environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://localhost:39092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_NUM_PARTITIONS: 5
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-    volumes:
-      - ./storage/kafka-3:/var/lib/kafka/data
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
 
   spark-master:
     image: bde2020/spark-master:3.0.0-hadoop3.2
     container_name: spark-master
     depends_on:
       - namenode
-      - datanode-1
-      - datanode-2
-      - datanode-3
+      - datanode
     ports:
-      - "8080:8080"
+      - "28080:8080"
       - "7077:7077"
     environment:
       - INIT_DAEMON_STEP=setup_spark
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
 
-  spark-worker:
+  spark-worker-1:
     image: bde2020/spark-worker:3.0.0-hadoop3.2
-    container_name: spark-worker
+    container_name: spark-worker-1
     depends_on:
       - spark-master
     ports:
@@ -200,53 +85,54 @@ services:
 
   hive-server:
     image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    depends_on:
+      - namenode
+      - datanode
     env_file:
-      - ./hive/hadoop-hive.env
+      - ./hadoop-hive.env
     environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore:9083/metastore"
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
       SERVICE_PRECONDITION: "hive-metastore:9083"
     ports:
       - "10000:10000"
 
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
     env_file:
-      - ./hive/hadoop-hive.env
+      - ./hadoop-hive.env
     command: /opt/hive/bin/hive --service metastore
     environment:
-      - SERVICE_PRECONDITION=namenode:9870 hive-metastore-postgresql:5432
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 hive-metastore-postgresql:5432"
     ports:
       - "9083:9083"
 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgresql
 
-  presto-coordinator:
-    image: shawnzhu/prestodb:0.181
+  trino:
     ports:
-      - "18080:8080"
-
-  superset_db:
-    image: postgres:14
-    container_name: superset_db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_PASSWORD=superset
-      - POSTGRES_USER=superset
-      - POSTGRES_DB=superset
+      - "1880:8080"
+    image: "trinodb/trino:latest"
     volumes:
-      - ./superset/db_home:/var/lib/postgresql/data
+      - ./trino/etc:/usr/lib/trino/etc:ro
+      - ./trino/catalog:/etc/trino/catalog
 
   superset:
-    image: apache/superset
-    container_name: superset
+    build: ./superset
     ports:
-      - "18088:8088"
-    environment:
-      - SUPERSET_ADMIN_USERNAME=admin
-      - SUPERSET_ADMIN_PASSWORD=admin
-      - SUPERSET_LOAD_EXAMPLES=yes
-      - SUPERSET_CONFIG_PATH=/etc/superset/superset_config.py
+      - "8088:8088"
     volumes:
-      - ./superset:/etc/superset
-  
+      - superset-data:/app/superset_home
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
+  superset-data:
