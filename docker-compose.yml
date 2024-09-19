@@ -113,15 +113,17 @@ services:
     container_name: hive-metastore-postgresql
 
   trino:
+    container_name: trino
     ports:
       - "1880:8080"
-    image: "trinodb/trino:latest"
+    image: trinodb/trino:latest
     volumes:
       - ./trino/etc:/usr/lib/trino/etc:ro
       - ./trino/catalog:/etc/trino/catalog
 
   superset:
     build: ./superset
+    container_name: superset
     ports:
       - "8088:8088"
     volumes:

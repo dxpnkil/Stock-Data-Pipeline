@@ -1,0 +1,1 @@
+docker compose exec hive-server hiveserver2
