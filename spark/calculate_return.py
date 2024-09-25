@@ -4,6 +4,12 @@ from pyspark.sql.window import Window
 
 spark = SparkSession.builder \
     .appName("Returns Calculation") \
+    .config("hive.metastore.uris", "thrift://hive-metastore:9083") \
+    .config("datanucleus.autoCreateSchema", "false") \
+    .config("javax.jdo.option.ConnectionURL", "jdbc:postgresql://hive-metastore-postgresql/metastore") \
+    .config("javax.jdo.option.ConnectionDriverName", "org.postgresql.Driver") \
+    .config("javax.jdo.option.ConnectionPassword", "hive") \
+    .config("javax.jdo.option.ConnectionUserName", "hive") \
     .enableHiveSupport() \
     .getOrCreate()
     
