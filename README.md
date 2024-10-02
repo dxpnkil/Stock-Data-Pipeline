@@ -30,15 +30,16 @@ Use Superset to visualize the report for Business Insight. Please connect to Tri
 
 ![](./image/trino_superset.jpg)
 
-You can now let your imagination run wild when examining and evaluating the facts. Example:
+Example:
 
 ![](./image/fpt-simple-return-2024-09-25T08-03-24.979Z.jpg)
 
 
 ## Update:
 
+* ~~Build stream processing~~
 * ~~Build batch processing~~
 * Integrate Airflow
-* Build stream processing
+* Integrate multisource
 
 
