@@ -137,18 +137,27 @@ services:
   jobmanager:
     image: pyflink
     container_name: jobmanager
+    volumes:
+      - ./flink/jar:/jar
+      - ./flink/job:/job
+      - ./hive:/opt/hive-conf/
     ports:
       - "881:8081"
     command: jobmanager
     environment:
       - |
         FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-
+        jobmanager.rpc.address: jobmanager   
+    env_file:
+      - ./flink.env     
 
   taskmanager:
     image: pyflink
     container_name: taskmanager
+    volumes:
+      - ./flink/jar:/jar
+      - ./flink/job:/job
+      - ./hive:/opt/hive-conf/
     depends_on:
       - jobmanager
     command: taskmanager
@@ -157,7 +166,30 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2   
+        taskmanager.numberOfTaskSlots: 2
+    env_file:
+      - ./flink.env      
+  
+  zookeeper:
+    container_name: zookeeper
+    image: wurstmeister/zookeeper
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "2181:2181"
+  kafka:
+    container_name: kafka
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "stock:1:1"
 
 volumes:
   hadoop_namenode:
